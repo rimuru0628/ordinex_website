@@ -98,7 +98,7 @@ export function init(container, uid) {
         ...docSnap.data(),
       }));
 
-      renderList(mountEl, reports);
+      renderReportList(mountEl, reports);
     },
     (error) => {
       // On error, still cancel the loading timer so the spinner disappears
@@ -153,10 +153,12 @@ export function init(container, uid) {
 /**
  * Renders the report list (or empty state) into the mount element.
  *
+ * Exported as `renderReportList` for unit testing.
+ *
  * @param {HTMLElement} mountEl - The element to render into.
  * @param {Array<Object>} reports - Snapshot-derived report objects.
  */
-function renderList(mountEl, reports) {
+export function renderReportList(mountEl, reports) {
   // Clear previous content
   mountEl.innerHTML = '';
 

@@ -7,6 +7,7 @@ import { authGuard } from '../shared/auth-guard.js';
 const SECTION_MODULES = {
   'dashboard':           () => import('../admin/dashboard.js'),
   'concern-management':  () => import('../admin/concern-table.js'),
+  'notifications':       () => import('../admin/notifications.js'),
   'confirm-residents':   () => import('../admin/confirm-residents.js'),
   'settings':            () => import('../admin/settings.js'),
 };
@@ -40,7 +41,21 @@ async function activateSection(sectionName, user) {
       }
     } catch (err) {
       console.error(`[admin/app] Failed to load section "${sectionName}":`, err);
+      // Remove from initialised set so the next click retries
       initialisedSections.delete(sectionName);
+    }
+  } else if (initialisedSections.has(sectionName) && SECTION_MODULES[sectionName]) {
+    // Re-run init on every visit for live-data sections so the
+    // Firestore listener is always fresh (handles auth-state changes too)
+    if (sectionName === 'confirm-residents' || sectionName === 'notifications') {
+      try {
+        const module = await SECTION_MODULES[sectionName]();
+        if (typeof module?.init === 'function') {
+          module.init(container, user?.uid);
+        }
+      } catch (err) {
+        console.error(`[admin/app] Failed to reload section "${sectionName}":`, err);
+      }
     }
   }
 }
@@ -69,8 +84,28 @@ async function init() {
     link.addEventListener('click', (e) => {
       e.preventDefault();
       const section = link.dataset.section;
-      if (section) activateSection(section, user);
+      if (section) {
+        activateSection(section, user);
+        // Sync bottom nav active state
+        document.querySelectorAll('.admin-bottom-nav__btn').forEach(b =>
+          b.classList.toggle('is-active', b.dataset.section === section)
+        );
+      }
       closeSidebar();
+    });
+  });
+
+  // ── Bottom nav (mobile) ──────────────────────────────────────────────────
+  document.querySelectorAll('.admin-bottom-nav__btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const section = btn.dataset.section;
+      if (section) {
+        activateSection(section, user);
+        // Sync active state on bottom nav
+        document.querySelectorAll('.admin-bottom-nav__btn').forEach(b =>
+          b.classList.toggle('is-active', b.dataset.section === section)
+        );
+      }
     });
   });
 

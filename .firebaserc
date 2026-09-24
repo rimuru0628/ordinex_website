@@ -1,5 +1,14 @@
 {
   "projects": {
-    "default": "your-firebase-project-id"
+    "default": "ordinex-5cfa3"
+  },
+  "targets": {
+    "ordinex-5cfa3": {
+      "hosting": {
+        "ordinex": [
+          "ordinex-5cfa3"
+        ]
+      }
+    }
   }
 }

@@ -25,7 +25,7 @@ Implement the BEE-Alerta web application using HTML, CSS, and vanilla JavaScript
     - `showLoadingOverlay()` / `hideLoadingOverlay()` — toggles a CSS spinner overlay on the currently active page section
     - _Requirements: 5.2, 7.5, 8.1_
 
-  - [ ]* 2.2 Write property tests for `ui-helpers.js`
+  - [x]* 2.2 Write property tests for `ui-helpers.js`
     - **Property 6: Status Badge Rendering** — `fc.constantFrom('Pending','Ongoing','Completed')` → verify returned element has non-empty class and matching inner text
     - **Property 8: Date Formatting Consistency** — `fc.date()` → verify `formatDate` returns non-empty string encoding correct year, month, day
     - **Feature: bee-alerta, Property 6 & 8**
@@ -62,15 +62,15 @@ Implement the BEE-Alerta web application using HTML, CSS, and vanilla JavaScript
     - Wire social buttons in `index.html` to call `handleSocialLogin`
     - _Requirements: 1.7_
 
-  - [ ]* 4.4 Write unit tests for `login.js` validation
+  - [x]* 4.4 Write unit tests for `login.js` validation
     - Test: empty email → error shown, `signInWithEmailAndPassword` not called
     - Test: empty password → error shown, not called
     - Test: both empty → both errors shown
     - Test: wrong credentials mock → inline error displayed
     - _Requirements: 1.4, 1.5_
 
-- [ ] 5. Registration page
-  - [ ] 5.1 Create `register.html` with registration form UI
+- [x] 5. Registration page
+  - [x] 5.1 Create `register.html` with registration form UI
     - Fields: Full Name, Email, Phone Number, Barangay (text), Password, Confirm Password
     - All inputs have associated labels; password field has strength hint
     - Link back to login page
@@ -83,20 +83,20 @@ Implement the BEE-Alerta web application using HTML, CSS, and vanilla JavaScript
     - On success: redirect to `resident.html`
     - _Requirements: 2.2, 2.3, 2.4, 2.5, 2.6_
 
-  - [ ]* 5.3 Write property tests for registration validation
+  - [x]* 5.3 Write property tests for registration validation
     - **Property — Password length gate**: `fc.string({ maxLength: 7 })` → verify validator rejects; `fc.string({ minLength: 8 })` → verify validator accepts
     - **Property — Required fields**: `fc.record(...)` with random fields set to empty string → verify `validateRegistration` returns errors for all empty fields
     - **Feature: bee-alerta, Property 2.4 & 2.5**
     - _Requirements: 2.4, 2.5_
 
-  - [ ]* 5.4 Write unit tests for registration data persistence
+  - [x]* 5.4 Write unit tests for registration data persistence
     - Test: mock `createUserWithEmailAndPassword` and `setDoc` — verify `setDoc` called with correct fields including `role:'resident'`
     - _Requirements: 2.6_
 
 - [x] 6. Checkpoint — Auth flows working end-to-end
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 7. Resident SPA shell and navigation
+- [x] 7. Resident SPA shell and navigation
   - [x] 7.1 Create `resident.html` SPA shell
     - Header bar with app title, resident name + barangay display (populated from Firestore on auth), Sign Out button
     - Tab navigation: Submit Report | My Reports | Chatbot — tab panels with `role="tabpanel"` and `aria-labelledby`
@@ -110,7 +110,7 @@ Implement the BEE-Alerta web application using HTML, CSS, and vanilla JavaScript
     - Sign Out: call `signOut(auth)` then redirect to `index.html` regardless of session state
     - _Requirements: 3.2, 3.3, 3.4_
 
-- [ ] 8. Submit Report feature
+- [x] 8. Submit Report feature
   - [x] 8.1 Implement `src/resident/report-form.js`
     - Render form inside Submit Report tab panel: description `<textarea>`, category `<select>` with five options, image file input (`accept="image/*"`), GPS capture `<button>`, hidden lat/lng inputs
     - GPS button: call `navigator.geolocation.getCurrentPosition` → populate lat/lng inputs on success; display info message and enable manual lat/lng text inputs on denial
@@ -118,14 +118,14 @@ Implement the BEE-Alerta web application using HTML, CSS, and vanilla JavaScript
     - Form submit: validate description non-empty/non-whitespace-only and category selected; on validation failure show field errors; on pass: upload image to Storage at `reports/{uid}/{timestamp}_{filename}` if present, then `addDoc` to Firestore `reports` collection with all fields and `status:'Pending'`; on success show toast and reset form
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9_
 
-  - [ ]* 8.2 Write property tests for report-form validation
+  - [x]* 8.2 Write property tests for report-form validation
     - **Property 4: Input Validation Rejects Blank Descriptions** — `fc.string().filter(s => s.trim() === '')` → verify `validateDescription` returns error, no Firestore call
     - **Property 5: Image Size Gate** — `fc.integer({ min: 5*1024*1024+1, max: 50*1024*1024 })` used as mock file `.size` → verify `validateImageFile` rejects; `fc.integer({ min: 1, max: 5*1024*1024 })` → verify accepts
     - **Property 1: Report Submission Round Trip** — `fc.record({ description: fc.string({minLength:1}), category: fc.constantFrom(...categories), latitude: fc.option(fc.float()), longitude: fc.option(fc.float()) })` → mock `addDoc`, verify called with all input fields and `status:'Pending'`
     - **Feature: bee-alerta, Property 1, 4, 5**
     - _Requirements: 4.4, 4.5, 4.8_
 
-- [ ] 9. My Reports feature
+- [x] 9. My Reports feature
   - [x] 9.1 Implement `src/resident/my-reports.js`
     - Query: `query(collection(db,'reports'), where('residentId','==',uid), orderBy('submittedAt','desc'))`
     - Use `onSnapshot` listener; on each snapshot re-render the reports list
@@ -135,17 +135,17 @@ Implement the BEE-Alerta web application using HTML, CSS, and vanilla JavaScript
     - Show loading spinner overlay if Firestore snapshot takes > 3 s (set 3 s timeout, clear on snapshot arrival)
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 10.2_
 
-  - [ ]* 9.2 Write property tests for My Reports filtering
+  - [x]* 9.2 Write property tests for My Reports filtering
     - **Property 3: Report Ownership Isolation** — `fc.array(fc.record({ residentId: fc.string(), ...otherFields }))` with a target `residentId` → call `filterByResident(reports, targetId)` → verify all returned items have `residentId === targetId`
     - **Feature: bee-alerta, Property 3**
     - _Requirements: 5.1_
 
-  - [ ]* 9.3 Write unit tests for My Reports rendering
+  - [x]* 9.3 Write unit tests for My Reports rendering
     - Test: array of 3 reports → renders 3 list items with correct category, date, status badge
     - Test: empty array → shows only empty-state message, list container hidden
     - _Requirements: 5.2, 5.5_
 
-- [ ] 10. Chatbot feature
+- [x] 10. Chatbot feature
   - [x] 10.1 Implement `src/resident/chatbot.js`
     - Chat UI inside Chatbot tab: scrollable message history `<div>`, text `<input>`, Send `<button>`
     - Message history stored in module-level array; re-renders on each send/receive
@@ -156,20 +156,20 @@ Implement the BEE-Alerta web application using HTML, CSS, and vanilla JavaScript
     - Enter key triggers send
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.7_
 
-  - [ ]* 10.2 Write property tests for chatbot history
+  - [x]* 10.2 Write property tests for chatbot history
     - **Property — Chat history preservation** — `fc.array(fc.record({ role: fc.constantFrom('user','assistant'), content: fc.string() }), { minLength: 1 })` → send N messages via `appendMessage()`, verify `getChatHistory()` returns all N messages in correct order
     - **Feature: bee-alerta, Property 6.7**
     - _Requirements: 6.7_
 
-  - [ ]* 10.3 Write unit tests for chatbot rendering
+  - [x]* 10.3 Write unit tests for chatbot rendering
     - Test: user message has class `bubble--user`; assistant message has class `bubble--assistant` — verify CSS class distinction
     - Test: Ollama error → error bubble shown; if partial content exists, it is rendered before error bubble
     - _Requirements: 6.3, 6.5_
 
-- [~] 11. Checkpoint — Resident interface complete
+- [x] 11. Checkpoint — Resident interface complete
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 12. Admin SPA shell and sidebar navigation
+- [x] 12. Admin SPA shell and sidebar navigation
   - [x] 12.1 Create `admin.html` SPA shell
     - Sidebar: logo, nav links (Dashboard, Community Concern Management, Settings), Sign Out at bottom
     - Main content area with `<main id="admin-content">`
@@ -184,7 +184,7 @@ Implement the BEE-Alerta web application using HTML, CSS, and vanilla JavaScript
     - Sign Out handler: `signOut(auth)` then redirect to `index.html`
     - _Requirements: 3.4, 7.7_
 
-- [ ] 13. Admin Dashboard section
+- [x] 13. Admin Dashboard section
   - [x] 13.1 Implement `src/admin/dashboard.js` — stat cards and real-time listener
     - Subscribe to `onSnapshot(collection(db,'reports'))` listener
     - On each snapshot: compute total, pending, ongoing, completed counts; update the four stat card DOM elements
@@ -199,17 +199,17 @@ Implement the BEE-Alerta web application using HTML, CSS, and vanilla JavaScript
     - Pie/Doughnut chart: show proportional category breakdown when total > 0; show "No data available" `<p>` element and hide `<canvas>` when total = 0
     - _Requirements: 7.2, 7.3, 7.4_
 
-  - [ ]* 13.3 Write unit tests for dashboard stat computation
+  - [x]* 13.3 Write unit tests for dashboard stat computation
     - Test: snapshot with 2 Pending, 1 Ongoing, 1 Completed → verify computeStats returns `{ total:4, pending:2, ongoing:1, completed:1 }`
     - Test: empty snapshot → all counts 0
     - _Requirements: 7.1, 7.4_
 
-  - [ ]* 13.4 Write property test for Recent Reports count
+  - [-]* 13.4 Write property test for Recent Reports count
     - **Property 7.5: Recent Reports bounded count** — `fc.array(fc.record({...reportFields}), { minLength: 0, maxLength: 30 })` → call `getRecentReports(reports)` → verify result length ≤ 10 and = min(reports.length, 10)
     - **Feature: bee-alerta, Property 7.5**
     - _Requirements: 7.5_
 
-- [ ] 14. Community Concern Management section
+- [x] 14. Community Concern Management section
   - [x] 14.1 Implement `src/admin/concern-table.js` — table rendering and real-time updates
     - Subscribe to `onSnapshot(collection(db,'reports'))` with `orderBy('submittedAt','desc')`
     - Render table rows: Report ID (truncated), Resident Name, Category, Description (first 80 chars), `formatDate(submittedAt)`, thumbnail `<img>` (or placeholder icon if no image), status badge, Actions button
@@ -218,14 +218,14 @@ Implement the BEE-Alerta web application using HTML, CSS, and vanilla JavaScript
     - Pagination: show first 20 rows; "Load More" button uses Firestore `startAfter` cursor for next batch
     - _Requirements: 8.1, 8.4, 8.8, 10.1_
 
-  - [ ]* 14.2 Write property tests for filter logic
+  - [-]* 14.2 Write property tests for filter logic
     - **Property 2 (Status Transition) / Property — Status filter**: `fc.array(reportGen)` + `fc.constantFrom('Pending','Ongoing','Completed')` → `applyFilters(reports, { status })` → verify every result has `status === filter` and result length ≤ input length
     - **Property — Category filter**: same pattern for category field
     - **Property — Search filter**: `fc.array(reportGen)` + `fc.string({ minLength:1 })` → `applyFilters(reports, { search: query })` → verify every result has `description` or `residentName` containing query (case-insensitive)
     - **Feature: bee-alerta, Property 8.2, 8.3, 8.4**
     - _Requirements: 8.2, 8.3, 8.4_
 
-  - [ ]* 14.3 Write property test for pagination
+  - [-]* 14.3 Write property test for pagination
     - **Property 8.8: Pagination limit** — `fc.array(reportGen, { minLength: 21, maxLength: 100 })` → `paginateReports(reports, 1)` → verify result length === 20
     - **Feature: bee-alerta, Property 8.8**
     - _Requirements: 8.8_
@@ -237,7 +237,7 @@ Implement the BEE-Alerta web application using HTML, CSS, and vanilla JavaScript
     - Optimistically update the table row status badge before Firestore confirms
     - _Requirements: 8.5, 8.6, 8.7, 8.9_
 
-  - [ ]* 14.5 Write property tests for status update logic
+  - [-]* 14.5 Write property tests for status update logic
     - **Property 2: Status Transition Validity** — `fc.constantFrom('Pending','Ongoing','Completed')` → mock `updateDoc`, call `updateReportStatus(reportId, newStatus, officialId)` → verify `updateDoc` called with `{ status: newStatus }` and `updatedAt` field present
     - **Feature: bee-alerta, Property 2**
     - _Requirements: 8.6, 8.7_
@@ -247,10 +247,10 @@ Implement the BEE-Alerta web application using HTML, CSS, and vanilla JavaScript
     - **Feature: bee-alerta, Property 8.9**
     - _Requirements: 8.9_
 
-- [~] 15. Checkpoint — Admin Dashboard and Concern Management working
+- [x] 15. Checkpoint — Admin Dashboard and Concern Management working
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 16. Admin Settings section
+- [x] 16. Admin Settings section
   - [x] 16.1 Implement `src/admin/settings.js`
     - On section load: `getDoc(doc(db,'settings',officialId))` → populate form fields and toggle states
     - Three sections rendered as accordions: General Settings (display name text input, contact email text input), Notification Settings (email notifications toggle), Content Preferences (placeholder toggle)

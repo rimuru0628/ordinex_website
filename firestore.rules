@@ -1,0 +1,44 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Users ────────────────────────────────────────────────────────────────
+    match /users/{userId} {
+
+      // Any authenticated user can create their own profile document.
+      // This is needed so the mobile signup can write to Firestore right after
+      // Firebase Auth account creation.
+      allow create: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.data.role == 'resident'
+                    && request.resource.data.status == 'pending';
+
+      // Users can read and update their own document.
+      allow read, update: if request.auth != null
+                          && request.auth.uid == userId;
+
+      // Admins (role == 'admin') can read and update any user document.
+      // Used by the admin web panel to approve / reject residents.
+      allow read, update: if request.auth != null
+                          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // ── Reports ──────────────────────────────────────────────────────────────
+    match /reports/{reportId} {
+
+      // Approved residents can create reports.
+      allow create: if request.auth != null
+                    && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'approved';
+
+      // Owners can read their own reports; admins can read all.
+      allow read: if request.auth != null
+                  && (resource.data.userId == request.auth.uid
+                      || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+
+      // Admins can update report status.
+      allow update: if request.auth != null
+                    && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+  }
+}

@@ -2,8 +2,9 @@
  * Admin login — Firebase Email + Password Auth.
  */
 
-import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../shared/firebase.js';
+import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../shared/firebase.js';
 
 // ---------------------------------------------------------------------------
 // DOM references
@@ -41,11 +42,13 @@ function setLoading(loading) {
 // ---------------------------------------------------------------------------
 
 togglePwdBtn?.addEventListener('click', () => {
-  const visible = passwordInput.type === 'text';
-  passwordInput.type = visible ? 'password' : 'text';
-  togglePwdBtn.setAttribute('aria-label', visible ? 'Show password' : 'Hide password');
-  eyeShow.style.display = visible ? '' : 'none';
-  eyeHide.style.display = visible ? 'none' : '';
+  const isPassword = passwordInput.type === 'password';
+  // Toggle: if currently password → show it (text); if text → hide it (password)
+  passwordInput.type = isPassword ? 'text' : 'password';
+  togglePwdBtn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+  // When password is visible: hide the eye-open icon, show the eye-closed icon
+  eyeShow.style.display = isPassword ? 'none' : '';
+  eyeHide.style.display = isPassword ? '' : 'none';
 });
 
 // ---------------------------------------------------------------------------
@@ -81,6 +84,23 @@ function validate() {
 }
 
 // ---------------------------------------------------------------------------
+// Role check — only 'admin' or 'official' roles can access the admin panel
+// ---------------------------------------------------------------------------
+
+const ALLOWED_ROLES = ['admin', 'official'];
+
+async function isAdminUser(uid) {
+  try {
+    const snap = await getDoc(doc(db, 'users', uid));
+    if (!snap.exists()) return false;
+    const role = snap.data()?.role ?? '';
+    return ALLOWED_ROLES.includes(role);
+  } catch {
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Sign in
 // ---------------------------------------------------------------------------
 
@@ -93,11 +113,27 @@ async function handleLogin(e) {
   setLoading(true);
 
   try {
-    await signInWithEmailAndPassword(auth, emailInput.value.trim(), passwordInput.value);
-    // onAuthStateChanged below handles the redirect
+    const credential = await signInWithEmailAndPassword(
+      auth,
+      emailInput.value.trim(),
+      passwordInput.value,
+    );
+
+    // Check role before allowing access
+    const allowed = await isAdminUser(credential.user.uid);
+    if (!allowed) {
+      // Sign them back out immediately and show an error
+      await signOut(auth);
+      showAuthError('Access denied. This portal is for authorized officials only.');
+      setLoading(false);
+      return;
+    }
+
+    // Role is valid — onAuthStateChanged will redirect
   } catch (err) {
-    console.error('[login] error:', err);
-    showAuthError(errorMessage(err.code));
+    console.error('[login] error code:', err.code);
+    console.error('[login] error message:', err.message);
+    showAuthError(errorMessage(err.code) + ' (code: ' + err.code + ')');
     setLoading(false);
   }
 }
@@ -106,9 +142,15 @@ async function handleLogin(e) {
 // Auth state — redirect to admin if already signed in
 // ---------------------------------------------------------------------------
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
   if (user) {
-    window.location.href = '/admin.html';
+    const allowed = await isAdminUser(user.uid);
+    if (allowed) {
+      window.location.href = '/admin.html';
+    } else {
+      // Resident somehow on this page — sign out silently
+      await signOut(auth);
+    }
   }
 });
 
