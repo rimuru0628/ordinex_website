@@ -1,13 +1,13 @@
-/**
- * Resident Chatbot — `src/resident/chatbot.js`
+﻿/**
+ * Resident Chatbot  `src/resident/chatbot.js`
  *
  * Provides an Ollama-powered chat UI for ordinance questions.
  * Lazily initialised by `resident/app.js` when the Chatbot tab is activated.
  *
  * Public API:
- *   init(container, uid)     — renders the full chat UI into `container`
- *   appendMessage(history, message) — pure helper: returns new array with message appended
- *   getChatHistory()         — returns the current in-memory chat history array
+ *   init(container, uid)      renders the full chat UI into `container`
+ *   appendMessage(history, message)  pure helper: returns new array with message appended
+ *   getChatHistory()          returns the current in-memory chat history array
  */
 
 // ---------------------------------------------------------------------------
@@ -46,7 +46,7 @@ let chatHistory = [];
 // ---------------------------------------------------------------------------
 
 /**
- * Pure function — returns a **new** array with `message` appended to `history`.
+ * Pure function  returns a **new** array with `message` appended to `history`.
  * Does not mutate the original array.
  *
  * @param {Array<{ role: string, content: string }>} history

@@ -1,410 +1,356 @@
-/**
- * Registration page logic for BEE-Alerta.
- *
- * Handles client-side validation, Firebase Auth account creation, Firestore
- * user document creation, and post-registration redirect.
- *
- * Exports `validateRegistrationForm` and `validatePassword` as pure functions
- * so they can be unit-tested without a DOM or Firebase connection.
+﻿/**
+ * Barangay Official registration.
+ * - Role hardcoded as 'official'
+ * - Status 'pending'  requires admin confirmation before login
+ * - Valid ID uploaded to Cloudinary, URL saved to Firestore
  */
 
-import {
-  createUserWithEmailAndPassword,
-} from 'firebase/auth';
-import {
-  doc,
-  setDoc,
-  serverTimestamp,
-} from 'firebase/firestore';
-
+import { createUserWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
+import { doc, setDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../shared/firebase.js';
-import { showToast } from '../shared/ui-helpers.js';
+
+//  DOM refs 
+
+const form          = document.getElementById('register-form');
+const nameInput     = document.getElementById('name-input');
+const emailInput    = document.getElementById('email-input');
+const phoneInput    = document.getElementById('phone-input');
+const barangayInput = document.getElementById('barangay-input');
+const passwordInput = document.getElementById('password-input');
+const confirmInput  = document.getElementById('confirm-input');
+const idUploadZone  = document.getElementById('id-upload-zone');
+const idFileInput   = document.getElementById('id-upload');
+const idPreview     = document.getElementById('id-upload-preview');
+const idError       = document.getElementById('id-error');
+const registerBtn   = document.getElementById('register-btn');
+const authError     = document.getElementById('auth-error');
+const authSuccess   = document.getElementById('auth-success');
+const nameError     = document.getElementById('name-error');
+const emailError    = document.getElementById('email-error');
+const phoneError    = document.getElementById('phone-error');
+const barangayError = document.getElementById('barangay-error');
+const passwordError = document.getElementById('password-error');
+const confirmError  = document.getElementById('confirm-error');
+const togglePwdBtn  = document.getElementById('toggle-password');
+const eyeShow       = document.getElementById('eye-show');
+const eyeHide       = document.getElementById('eye-hide');
+
+//  Helpers 
+
+function showErr(el, msg) { if (!el) return; el.textContent = msg; el.hidden = false; }
+function clearErr(el)     { if (!el) return; el.textContent = ''; el.hidden = true; }
+function showAuthError(msg)   { if (authError)   { authError.textContent = msg;   authError.hidden = false; } }
+function clearAuthError()     { if (authError)   { authError.textContent = '';    authError.hidden = true; } }
+function showAuthSuccess(msg) { if (authSuccess) { authSuccess.textContent = msg; authSuccess.hidden = false; } }
+
+function setLoading(on) {
+  if (!registerBtn) return;
+  registerBtn.disabled = on;
+  registerBtn.textContent = on ? 'Creating account\u2026' : 'Create Account';
+}
+
+//  Password toggle 
+
+togglePwdBtn?.addEventListener('click', () => {
+  const visible = passwordInput.type === 'text';
+  passwordInput.type = visible ? 'password' : 'text';
+  eyeShow.style.display = visible ? '' : 'none';
+  eyeHide.style.display = visible ? 'none' : '';
+  togglePwdBtn.setAttribute('aria-label', visible ? 'Show password' : 'Hide password');
+});
+
+//  ID upload 
+
+let idFile = null;
+
+const PLACEHOLDER_HTML = `
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+    <circle cx="12" cy="13" r="4"/>
+  </svg>
+  <p class="id-upload-text">Click or drag to upload your Valid ID</p>
+  <p class="id-upload-hint">JPG, PNG &mdash; required</p>
+`;
+
+function setIdFile(f) {
+  idFile = f;
+  if (!idPreview) return;
+  idPreview.innerHTML = '';
+  const img = document.createElement('img');
+  img.src = URL.createObjectURL(f);
+  img.style.cssText = 'width:100%;max-height:160px;object-fit:cover;border-radius:8px;';
+  idPreview.appendChild(img);
+  const rm = document.createElement('button');
+  rm.type = 'button';
+  rm.textContent = '\u2715 Remove';
+  rm.style.cssText = 'margin-top:8px;font-size:12px;background:none;border:none;color:#6B7280;cursor:pointer;';
+  rm.addEventListener('click', (e) => { e.stopPropagation(); clearIdFile(); });
+  idPreview.appendChild(rm);
+  if (idError) { idError.textContent = ''; idError.hidden = true; }
+}
+
+function clearIdFile() {
+  idFile = null;
+  if (idFileInput) idFileInput.value = '';
+  if (idPreview) idPreview.innerHTML = PLACEHOLDER_HTML;
+}
+
+idUploadZone?.addEventListener('click', () => idFileInput?.click());
+idUploadZone?.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') idFileInput?.click(); });
+idUploadZone?.addEventListener('dragover', (e) => { e.preventDefault(); idUploadZone.classList.add('id-upload-zone--drag'); });
+idUploadZone?.addEventListener('dragleave', () => idUploadZone?.classList.remove('id-upload-zone--drag'));
+idUploadZone?.addEventListener('drop', (e) => {
+  e.preventDefault();
+  idUploadZone.classList.remove('id-upload-zone--drag');
+  if (e.dataTransfer.files[0]) setIdFile(e.dataTransfer.files[0]);
+});
+idFileInput?.addEventListener('change', () => { if (idFileInput.files[0]) setIdFile(idFileInput.files[0]); });
+
+//  Cloudinary upload 
+
+async function uploadIdToCloudinary(file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', 'beealert_uploads');
+  fd.append('folder', 'user_ids');
+  const res = await fetch('https://api.cloudinary.com/v1_1/zq9gopfc/upload', { method: 'POST', body: fd });
+  if (!res.ok) throw new Error('Upload failed: ' + res.statusText);
+  return (await res.json()).secure_url;
+}
+
+//  Validation 
+
+function validate() {
+  let valid = true;
+
+  const name = nameInput?.value.trim() ?? '';
+  if (!name) { showErr(nameError, 'Full name is required.'); valid = false; }
+  else clearErr(nameError);
+
+  const email = emailInput?.value.trim() ?? '';
+  if (!email) { showErr(emailError, 'Email address is required.'); valid = false; }
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showErr(emailError, 'Enter a valid email address.'); valid = false; }
+  else clearErr(emailError);
+
+  const phone = phoneInput?.value.trim() ?? '';
+  const digits = phone.replace(/\D/g, '');
+  if (!phone) { showErr(phoneError, 'Mobile number is required.'); valid = false; }
+  else if (!((digits.length === 11 && digits.startsWith('09')) || (digits.length === 10 && digits.startsWith('9')))) {
+    showErr(phoneError, 'Enter a valid PH number (09XXXXXXXXX).'); valid = false;
+  } else clearErr(phoneError);
+
+  const barangay = barangayInput?.value ?? '';
+  if (!barangay) { showErr(barangayError, 'Please select your barangay.'); valid = false; }
+  else clearErr(barangayError);
+
+  const password = passwordInput?.value ?? '';
+  if (!password) { showErr(passwordError, 'Password is required.'); valid = false; }
+  else if (password.length < 6) { showErr(passwordError, 'Password must be at least 6 characters.'); valid = false; }
+  else clearErr(passwordError);
+
+  const confirm = confirmInput?.value ?? '';
+  if (!confirm) { showErr(confirmError, 'Please confirm your password.'); valid = false; }
+  else if (confirm !== password) { showErr(confirmError, 'Passwords do not match.'); valid = false; }
+  else clearErr(confirmError);
+
+  if (!idFile) { showErr(idError, 'Please upload a valid ID photo.'); valid = false; }
+
+  return valid;
+}
+
+//  Title case 
+
+function toTitleCase(str) {
+  return str.split(' ').map(w => w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w).join(' ');
+}
+
+//  Register 
+
+async function handleRegister(e) {
+  e.preventDefault();
+  clearAuthError();
+  if (!validate()) return;
+
+  setLoading(true);
+
+  try {
+    const name     = toTitleCase(nameInput.value.trim());
+    const email    = emailInput.value.trim();
+    const phone    = phoneInput.value.trim();
+    const barangay = barangayInput.value;
+    const password = passwordInput.value;
+
+    // Upload ID photo first
+    const idImageUrl = await uploadIdToCloudinary(idFile);
+
+    // Create Firebase Auth account
+    const credential = await createUserWithEmailAndPassword(auth, email, password);
+    const uid = credential.user.uid;
+
+    // Save profile  role: 'official', status: 'pending'
+    await setDoc(doc(db, 'users', uid), {
+      uid,
+      fullName:    name,
+      displayName: name,
+      email,
+      phoneNumber: phone,
+      barangay,
+      role:        'official',
+      status:      'pending',
+      idImageUrl,
+      createdAt:   serverTimestamp(),
+    });
+
+    // Admin notification
+    await addDoc(collection(db, 'admin_notifications'), {
+      type:  'new_signup',
+      title: 'New Official Sign-Up: ' + name,
+      body:  name + ' from Brgy. ' + barangay + ' has registered as a barangay official and is waiting for approval.',
+      meta:  { userId: uid, residentName: name, barangay },
+      read:  false,
+      createdAt: serverTimestamp(),
+    });
+
+    // Sign out  must wait for admin approval
+    await signOut(auth);
+
+    form.reset();
+    clearIdFile();
+    showAuthSuccess('Account created! Your account is pending approval by the admin. You will be notified once approved.');
+    setLoading(false);
+
+    setTimeout(() => { window.location.href = '/index.html'; }, 4000);
+  } catch (err) {
+    console.error('[register]', err);
+    showAuthError(errorMessage(err.code) ?? err.message ?? 'Registration failed. Please try again.');
+    setLoading(false);
+  }
+}
+
+//  Error messages 
+
+function errorMessage(code) {
+  const map = {
+    'auth/email-already-in-use':   'An account with this email already exists.',
+    'auth/invalid-email':          'Invalid email address format.',
+    'auth/weak-password':          'Password is too weak. Use at least 6 characters.',
+    'auth/network-request-failed': 'Network error. Check your connection.',
+  };
+  return map[code];
+}
+
+//  Redirect if already approved admin 
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    try {
+      const { getDoc } = await import('firebase/firestore');
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      const data = snap.data() ?? {};
+      if (['admin', 'official'].includes(data.role) && data.status === 'approved') {
+        window.location.href = '/admin.html';
+      }
+    } catch (_) {}
+  }
+});
+
+//  Event listeners 
+
+form?.addEventListener('submit', handleRegister);
+nameInput?.addEventListener('input',      () => clearErr(nameError));
+emailInput?.addEventListener('input',     () => clearErr(emailError));
+phoneInput?.addEventListener('input',     () => clearErr(phoneError));
+barangayInput?.addEventListener('change', () => clearErr(barangayError));
+passwordInput?.addEventListener('input',  () => clearErr(passwordError));
+confirmInput?.addEventListener('input',   () => clearErr(confirmError));
 
 // ---------------------------------------------------------------------------
-// Pure validation helpers (exported for testing)
+// Exported pure helpers (used by unit tests)
 // ---------------------------------------------------------------------------
 
 /**
- * Validates a single password value.
+ * Returns true if the password is at least 8 characters long.
  *
  * @param {string} password
- * @returns {boolean} `true` when the password is 8 or more characters.
+ * @returns {boolean}
  */
 export function validatePassword(password) {
   return typeof password === 'string' && password.length >= 8;
 }
 
 /**
- * Validates all registration form fields.
+ * Validate all registration fields and return an errors object.
+ * Field names match what the unit tests pass:
+ *   fullName, email, phoneNumber, barangay, password, confirmPassword
  *
- * Rules:
- * - `fullName`        — must not be empty
- * - `email`           — must match a basic email format
- * - `phoneNumber`     — must not be empty
- * - `barangay`        — must not be empty
- * - `password`        — must not be empty AND length ≥ 8
- * - `confirmPassword` — must match `password`
- *
- * @param {{ fullName: string, email: string, phoneNumber: string, barangay: string, password: string, confirmPassword: string }} data
- * @returns {{ valid: boolean, errors: { [fieldName: string]: string } }}
+ * @param {{ fullName?: string, email?: string, phoneNumber?: string, barangay?: string, password?: string, confirmPassword?: string }} data
+ * @returns {{ valid: boolean, errors: Record<string, string> }}
  */
 export function validateRegistrationForm(data) {
-  const { fullName, email, phoneNumber, barangay, password, confirmPassword } = data;
   const errors = {};
 
-  // Full name — required
-  if (!fullName || fullName.trim() === '') {
+  // fullName
+  if (!data.fullName || !data.fullName.trim()) {
     errors.fullName = 'Full name is required.';
   }
 
-  // Email — required + format
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!email || email.trim() === '') {
+  // email
+  const email = data.email ?? '';
+  if (!email.trim()) {
     errors.email = 'Email address is required.';
-  } else if (!emailRegex.test(email.trim())) {
-    errors.email = 'Please enter a valid email address.';
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errors.email = 'Enter a valid email address.';
   }
 
-  // Phone number — required
-  if (!phoneNumber || phoneNumber.trim() === '') {
-    errors.phoneNumber = 'Phone number is required.';
+  // phoneNumber (PH format: 09XXXXXXXXX or 9XXXXXXXXX)
+  const phone  = data.phoneNumber ?? '';
+  const digits = phone.replace(/\D/g, '');
+  if (!phone.trim()) {
+    errors.phoneNumber = 'Mobile number is required.';
+  } else if (!((digits.length === 11 && digits.startsWith('09')) || (digits.length === 10 && digits.startsWith('9')))) {
+    errors.phoneNumber = 'Enter a valid PH number (09XXXXXXXXX).';
   }
 
-  // Barangay — required
-  if (!barangay || barangay.trim() === '') {
-    errors.barangay = 'Barangay is required.';
+  // barangay
+  if (!data.barangay || !data.barangay.trim()) {
+    errors.barangay = 'Please select your barangay.';
   }
 
-  // Password — required AND ≥ 8 characters (both checks collapse to the same
-  // message because an empty password also fails the length gate)
-  if (!password || !validatePassword(password)) {
+  // password — must be valid before checking confirmPassword
+  const pw = data.password ?? '';
+  if (!pw) {
+    errors.password = 'Password is required.';
+  } else if (!validatePassword(pw)) {
     errors.password = 'Password must be at least 8 characters.';
-  }
-
-  // Confirm password — must match password (only if password itself is valid)
-  if (!errors.password && password !== confirmPassword) {
-    errors.confirmPassword = 'Passwords do not match.';
-  }
-  // Also flag confirmPassword when it is empty and password is valid
-  if (!errors.password && (confirmPassword === undefined || confirmPassword === null || confirmPassword === '')) {
-    errors.confirmPassword = 'Please confirm your password.';
-  }
-
-  return {
-    valid: Object.keys(errors).length === 0,
-    errors,
-  };
-}
-
-// ---------------------------------------------------------------------------
-// DOM helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Shows an inline validation error message below a form field.
- *
- * Looks for an element with id `<fieldId>-error` (created if it doesn't exist)
- * and sets its text content.  Also adds `aria-describedby` on the input so
- * screen readers announce the error.
- *
- * @param {string} fieldId - The `id` attribute of the input element.
- * @param {string} message - The error text to display.
- */
-function showFieldError(fieldId, message) {
-  const field = document.getElementById(fieldId);
-  if (!field) return;
-
-  let errorEl = document.getElementById(`${fieldId}-error`);
-  if (!errorEl) {
-    errorEl = document.createElement('p');
-    errorEl.id = `${fieldId}-error`;
-    errorEl.className = 'field-error';
-    errorEl.setAttribute('role', 'alert');
-    field.parentNode.insertBefore(errorEl, field.nextSibling);
-  }
-
-  errorEl.textContent = message;
-  errorEl.hidden = false;
-  field.setAttribute('aria-describedby', `${fieldId}-error`);
-  field.classList.add('input--error');
-}
-
-/**
- * Clears the inline validation error for a given field.
- *
- * @param {string} fieldId
- */
-function clearFieldError(fieldId) {
-  const field = document.getElementById(fieldId);
-  const errorEl = document.getElementById(`${fieldId}-error`);
-
-  if (errorEl) {
-    errorEl.textContent = '';
-    errorEl.hidden = true;
-  }
-  if (field) {
-    field.removeAttribute('aria-describedby');
-    field.classList.remove('input--error');
-  }
-}
-
-/**
- * Clears all registration form errors.
- */
-function clearAllErrors() {
-  [
-    'full-name',
-    'email',
-    'phone',
-    'barangay',
-    'password',
-    'confirm-password',
-  ].forEach(clearFieldError);
-}
-
-/**
- * Maps validation error keys to DOM element IDs.
- * (The form uses `full-name`, `phone`, and `confirm-password` as IDs.)
- */
-const FIELD_ID_MAP = {
-  fullName: 'full-name',
-  email: 'email',
-  phoneNumber: 'phone',
-  barangay: 'barangay',
-  password: 'password',
-  confirmPassword: 'confirm-password',
-};
-
-/**
- * Reads the current value of a form field by ID, trimming whitespace.
- * Returns an empty string if the element is not found.
- *
- * @param {string} id
- * @returns {string}
- */
-function fieldValue(id) {
-  const el = document.getElementById(id);
-  return el ? el.value.trim() : '';
-}
-
-// ---------------------------------------------------------------------------
-// Registration submit handler
-// ---------------------------------------------------------------------------
-
-/**
- * Handles the registration form submission:
- * 1. Runs client-side validation.
- * 2. On valid data, calls Firebase Auth `createUserWithEmailAndPassword`.
- * 3. Writes the user profile document to Firestore.
- * 4. Redirects to `resident.html` on success.
- *
- * @param {Event} event - The form submit event.
- */
-async function handleRegisterSubmit(event) {
-  event.preventDefault();
-
-  // Collect field values (confirmPassword is NOT trimmed — exact match needed)
-  const confirmPasswordEl = document.getElementById('confirm-password');
-  const confirmPassword = confirmPasswordEl ? confirmPasswordEl.value : '';
-
-  const data = {
-    fullName: fieldValue('full-name'),
-    email: fieldValue('email'),
-    phoneNumber: fieldValue('phone'),
-    barangay: fieldValue('barangay'),
-    password: fieldValue('password'),
-    confirmPassword,
-  };
-
-  // Clear previous errors
-  clearAllErrors();
-
-  // Validate
-  const { valid, errors } = validateRegistrationForm(data);
-
-  if (!valid) {
-    // Display inline errors for each failing field
-    for (const [key, message] of Object.entries(errors)) {
-      const domId = FIELD_ID_MAP[key];
-      if (domId) showFieldError(domId, message);
-    }
-    // Focus the first errored field
-    const firstErrorKey = Object.keys(errors)[0];
-    const firstErrorId = FIELD_ID_MAP[firstErrorKey];
-    if (firstErrorId) {
-      const firstField = document.getElementById(firstErrorId);
-      if (firstField) firstField.focus();
-    }
-    return;
-  }
-
-  // --- Firebase operations ---
-  try {
-    // 1. Create Auth account
-    const userCredential = await createUserWithEmailAndPassword(
-      auth,
-      data.email,
-      data.password
-    );
-    const { uid } = userCredential.user;
-
-    // 2. Write Firestore user document
-    await setDoc(doc(db, 'users', uid), {
-      fullName: data.fullName,
-      email: data.email,
-      phoneNumber: data.phoneNumber,
-      barangay: data.barangay,
-      role: 'resident',
-      createdAt: serverTimestamp(),
-    });
-
-    // 3. Redirect to resident dashboard
-    window.location.href = 'resident.html';
-  } catch (err) {
-    if (err.code === 'auth/email-already-in-use') {
-      showFieldError('email', 'This email address is already registered.');
-    } else {
-      // Generic Firebase/network error — surface via toast
-      showToast(err.message || 'Registration failed. Please try again.', 'error');
+  } else {
+    // Only validate confirmPassword when password itself is valid
+    if (!data.confirmPassword) {
+      errors.confirmPassword = 'Please confirm your password.';
+    } else if (data.confirmPassword !== pw) {
+      errors.confirmPassword = 'Passwords do not match.';
     }
   }
+
+  return { valid: Object.keys(errors).length === 0, errors };
 }
 
-// ---------------------------------------------------------------------------
-// Password UI — strength meter, show/hide toggles, clear-on-input
-// ---------------------------------------------------------------------------
-
 /**
- * Returns the strength level of a password: 'weak', 'medium', 'strong', or ''.
- *
- * Rules:
- * - ''      : empty or fewer than 8 characters
- * - 'weak'  : 8–11 characters with no mixed character requirement
- * - 'medium': 8+ characters with at least one uppercase AND (one digit OR one special char)
- * - 'strong': 12+ characters with uppercase AND digit AND special char
+ * Returns a password strength label based on length and character variety.
+ * Returns '' for passwords shorter than 8 characters.
  *
  * @param {string} password
  * @returns {'' | 'weak' | 'medium' | 'strong'}
  */
 export function getPasswordStrength(password) {
   if (!password || password.length < 8) return '';
-
   const hasUpper   = /[A-Z]/.test(password);
-  const hasDigit   = /[0-9]/.test(password);
+  const hasLower   = /[a-z]/.test(password);
+  const hasDigit   = /\d/.test(password);
   const hasSpecial = /[^A-Za-z0-9]/.test(password);
-
-  if (password.length >= 12 && hasUpper && hasDigit && hasSpecial) return 'strong';
-  if (password.length >= 8  && hasUpper && (hasDigit || hasSpecial)) return 'medium';
+  const variety    = [hasUpper, hasLower, hasDigit, hasSpecial].filter(Boolean).length;
+  // 'strong' requires special char + at least 3 other varieties, length >= 10
+  if (password.length >= 10 && hasSpecial && variety >= 3) return 'strong';
+  // 'medium' requires at least 2 varieties, length >= 8
+  if (variety >= 2) return 'medium';
   return 'weak';
-}
-
-/**
- * Wires:
- * 1. Password strength meter (input event on #password)
- * 2. Show/hide toggles for #password and #confirm-password
- * 3. Clear-on-input for all six form fields
- */
-function initPasswordUI() {
-  // ── 1. Password strength meter ──────────────────────────────────────────
-  const passwordInput  = document.getElementById('password');
-  const strengthFill   = document.getElementById('strength-fill');
-  const strengthLabel  = document.getElementById('password-strength-hint');
-
-  const STRENGTH_FILL_CLASSES  = ['password-strength__fill--weak', 'password-strength__fill--medium', 'password-strength__fill--strong'];
-  const STRENGTH_LABEL_CLASSES = ['password-strength__label--weak', 'password-strength__label--medium', 'password-strength__label--strong'];
-
-  const STRENGTH_TEXT = {
-    weak: 'Weak',
-    medium: 'Medium',
-    strong: 'Strong',
-  };
-
-  if (passwordInput && strengthFill && strengthLabel) {
-    passwordInput.addEventListener('input', () => {
-      const level = getPasswordStrength(passwordInput.value);
-
-      // Remove all strength modifier classes
-      strengthFill.classList.remove(...STRENGTH_FILL_CLASSES);
-      strengthLabel.classList.remove(...STRENGTH_LABEL_CLASSES);
-
-      if (level) {
-        strengthFill.classList.add(`password-strength__fill--${level}`);
-        strengthLabel.classList.add(`password-strength__label--${level}`);
-        strengthLabel.textContent = STRENGTH_TEXT[level];
-      } else {
-        strengthLabel.textContent = '';
-      }
-    });
-  }
-
-  // ── 2. Show/hide password toggles ───────────────────────────────────────
-
-  /**
-   * Wires a single show/hide toggle button.
-   *
-   * @param {string} toggleId      — id of the <button>
-   * @param {string} inputId       — id of the <input type="password">
-   * @param {string} eyeOnId       — id of the "eye" SVG (shown when password is hidden)
-   * @param {string} eyeOffId      — id of the "eye-off" SVG (shown when password is visible)
-   */
-  function wireToggle(toggleId, inputId, eyeOnId, eyeOffId) {
-    const btn    = document.getElementById(toggleId);
-    const input  = document.getElementById(inputId);
-    const eyeOn  = document.getElementById(eyeOnId);
-    const eyeOff = document.getElementById(eyeOffId);
-
-    if (!btn || !input) return;
-
-    btn.addEventListener('click', () => {
-      const isVisible = input.type === 'text';
-
-      input.type = isVisible ? 'password' : 'text';
-      btn.setAttribute('aria-pressed', String(!isVisible));
-
-      if (eyeOn)  eyeOn.style.display  = isVisible ? ''     : 'none';
-      if (eyeOff) eyeOff.style.display = isVisible ? 'none' : '';
-    });
-  }
-
-  wireToggle('toggle-password',         'password',         'eye-icon-password', 'eye-off-icon-password');
-  wireToggle('toggle-confirm-password', 'confirm-password', 'eye-icon-confirm',  'eye-off-icon-confirm');
-
-  // ── 3. Clear field error on input ───────────────────────────────────────
-  [
-    'full-name',
-    'email',
-    'phone',
-    'barangay',
-    'password',
-    'confirm-password',
-  ].forEach((fieldId) => {
-    const el = document.getElementById(fieldId);
-    if (el) {
-      el.addEventListener('input', () => clearFieldError(fieldId));
-    }
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Initialise on DOMContentLoaded
-// ---------------------------------------------------------------------------
-
-/**
- * Wires the registration form submit handler and password UI features.
- * Called automatically when the module is loaded in a browser context.
- */
-function initRegisterPage() {
-  const form = document.getElementById('register-form');
-  if (!form) return; // module may be imported in a non-browser test context
-  form.addEventListener('submit', handleRegisterSubmit);
-  initPasswordUI();
-}
-
-// Auto-init when running in a real browser page
-if (typeof document !== 'undefined') {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initRegisterPage);
-  } else {
-    initRegisterPage();
-  }
 }

@@ -8,21 +8,20 @@ import { getStorage } from 'firebase/storage';
  * Copy .env.example to .env and fill in your project values before running.
  */
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_API_KEY,
-  authDomain: import.meta.env.VITE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
+  apiKey:            import.meta.env.VITE_API_KEY,
+  authDomain:        import.meta.env.VITE_AUTH_DOMAIN,
+  projectId:         import.meta.env.VITE_PROJECT_ID,
+  storageBucket:     import.meta.env.VITE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_APP_ID,
+  appId:             import.meta.env.VITE_APP_ID,
 };
 
 // Initialize Firebase app singleton
 const app = initializeApp(firebaseConfig);
 
-// Export service singletons — import these throughout the app instead of
-// calling initializeApp / getAuth / getFirestore / getStorage again.
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+// Export service singletons — import these throughout the app
+export const auth    = getAuth(app);
+export const db      = getFirestore(app);
 export const storage = getStorage(app);
 
 export default app;

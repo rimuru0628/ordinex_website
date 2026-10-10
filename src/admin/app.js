@@ -1,8 +1,9 @@
-import { signOut } from 'firebase/auth';
-import { auth } from '../shared/firebase.js';
-import { authGuard } from '../shared/auth-guard.js';
+﻿import { signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../shared/firebase.js';
+import { authGuard, getRoles, hasRole } from '../shared/auth-guard.js';
 
-// ── Section routing ──────────────────────────────────────────────────────────
+//  Section routing 
 
 const SECTION_MODULES = {
   'dashboard':           () => import('../admin/dashboard.js'),
@@ -14,7 +15,7 @@ const SECTION_MODULES = {
 
 const initialisedSections = new Set();
 
-async function activateSection(sectionName, user) {
+async function activateSection(sectionName, user, barangay, adminRole) {
   document.querySelectorAll('.admin-nav__link').forEach((link) => {
     if (link.dataset.section === sectionName) {
       link.classList.add('is-active');
@@ -37,7 +38,7 @@ async function activateSection(sectionName, user) {
     try {
       const module = await SECTION_MODULES[sectionName]();
       if (typeof module?.init === 'function') {
-        module.init(container, user?.uid);
+        module.init(container, user?.uid, barangay, adminRole, user?.email);
       }
     } catch (err) {
       console.error(`[admin/app] Failed to load section "${sectionName}":`, err);
@@ -51,7 +52,7 @@ async function activateSection(sectionName, user) {
       try {
         const module = await SECTION_MODULES[sectionName]();
         if (typeof module?.init === 'function') {
-          module.init(container, user?.uid);
+          module.init(container, user?.uid, barangay, adminRole, user?.email);
         }
       } catch (err) {
         console.error(`[admin/app] Failed to reload section "${sectionName}":`, err);
@@ -60,7 +61,7 @@ async function activateSection(sectionName, user) {
   }
 }
 
-// ── Sidebar helpers ──────────────────────────────────────────────────────────
+//  Sidebar helpers 
 
 function closeSidebar() {
   document.getElementById('admin-sidebar')?.classList.remove('is-open');
@@ -74,18 +75,51 @@ function openSidebar() {
   document.getElementById('menu-toggle')?.setAttribute('aria-expanded', 'true');
 }
 
-// ── Init ─────────────────────────────────────────────────────────────────────
+//  Init 
 
 async function init() {
   // Wait for Firebase to confirm the user is signed in
   const user = await authGuard();
+
+  // Fetch the admin's own profile to get their barangay and effective role.
+  // If the account has both 'admin' and 'official' roles, treat them as super-admin
+  // (no barangay filter) — 'admin' always takes precedence over 'official'.
+  let adminBarangay = null;
+  let adminRole = 'admin';
+  try {
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    const data = snap.data() ?? {};
+    const roles = getRoles(data);
+
+    // Determine effective role: admin > official
+    if (roles.includes('admin')) {
+      adminRole = 'admin';
+      adminBarangay = null; // super-admin sees everything
+    } else if (roles.includes('official')) {
+      adminRole = 'official';
+      if (data.barangay) adminBarangay = data.barangay;
+    }
+  } catch (err) {
+    console.error('[app] Failed to fetch admin profile:', err);
+  }
+
+  // Show barangay label in the sidebar if filtered
+  if (adminBarangay) {
+    const brand = document.querySelector('.admin-sidebar__title');
+    if (brand) {
+      const tag = document.createElement('span');
+      tag.style.cssText = 'display:block;font-size:11px;font-weight:500;color:var(--color-primary);margin-top:2px;';
+      tag.textContent = 'Brgy. ' + adminBarangay;
+      brand.insertAdjacentElement('afterend', tag);
+    }
+  }
 
   document.querySelectorAll('.admin-nav__link').forEach((link) => {
     link.addEventListener('click', (e) => {
       e.preventDefault();
       const section = link.dataset.section;
       if (section) {
-        activateSection(section, user);
+        activateSection(section, user, adminBarangay, adminRole);
         // Sync bottom nav active state
         document.querySelectorAll('.admin-bottom-nav__btn').forEach(b =>
           b.classList.toggle('is-active', b.dataset.section === section)
@@ -95,12 +129,12 @@ async function init() {
     });
   });
 
-  // ── Bottom nav (mobile) ──────────────────────────────────────────────────
+  //  Bottom nav (mobile) 
   document.querySelectorAll('.admin-bottom-nav__btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const section = btn.dataset.section;
       if (section) {
-        activateSection(section, user);
+        activateSection(section, user, adminBarangay, adminRole);
         // Sync active state on bottom nav
         document.querySelectorAll('.admin-bottom-nav__btn').forEach(b =>
           b.classList.toggle('is-active', b.dataset.section === section)
@@ -122,7 +156,7 @@ async function init() {
     });
   });
 
-  activateSection('dashboard', user);
+  activateSection('dashboard', user, adminBarangay, adminRole);
 }
 
 init();

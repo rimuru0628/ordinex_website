@@ -1,5 +1,5 @@
-/**
- * My Reports tab module — `src/resident/my-reports.js`
+﻿/**
+ * My Reports tab module  `src/resident/my-reports.js`
  *
  * Responsibilities:
  *  1. Subscribe to the resident's own reports via a Firestore onSnapshot listener.
@@ -40,7 +40,7 @@ const LOADING_TIMEOUT_MS = 3000;
 /**
  * Filters an array of report objects to only those belonging to a specific resident.
  *
- * This is a pure function with no side effects — suitable for unit and property-based testing.
+ * This is a pure function with no side effects  suitable for unit and property-based testing.
  *
  * @param {Array<{residentId: string, [key: string]: any}>} reports - Array of report objects.
  * @param {string} residentId - The UID of the resident to filter by.
@@ -66,7 +66,7 @@ export function init(container, uid) {
   // Locate the inner mount point rendered by resident.html
   const mountEl = container.querySelector('#my-reports-container') ?? container;
 
-  // ── 1. Start 3-second timeout for loading spinner ─────────────────────────
+  //  1. Start 3-second timeout for loading spinner 
   let firstSnapshotReceived = false;
 
   const loadingTimer = setTimeout(() => {
@@ -75,14 +75,14 @@ export function init(container, uid) {
     }
   }, LOADING_TIMEOUT_MS);
 
-  // ── 2. Build the Firestore query ──────────────────────────────────────────
+  //  2. Build the Firestore query 
   const reportsQuery = query(
     collection(db, 'reports'),
     where('residentId', '==', uid),
     orderBy('submittedAt', 'desc')
   );
 
-  // ── 3. Subscribe with onSnapshot ─────────────────────────────────────────
+  //  3. Subscribe with onSnapshot 
   const unsubscribe = onSnapshot(
     reportsQuery,
     (snapshot) => {
@@ -98,7 +98,7 @@ export function init(container, uid) {
         ...docSnap.data(),
       }));
 
-      renderReportList(mountEl, reports);
+      renderList(mountEl, reports);
     },
     (error) => {
       // On error, still cancel the loading timer so the spinner disappears
@@ -116,7 +116,7 @@ export function init(container, uid) {
     }
   );
 
-  // ── 4. Wire up the detail modal close button ──────────────────────────────
+  //  4. Wire up the detail modal close button 
   const closeBtn = document.getElementById('close-report-detail-modal');
   if (closeBtn) {
     closeBtn.addEventListener('click', closeDetailModal);
@@ -153,17 +153,15 @@ export function init(container, uid) {
 /**
  * Renders the report list (or empty state) into the mount element.
  *
- * Exported as `renderReportList` for unit testing.
- *
  * @param {HTMLElement} mountEl - The element to render into.
  * @param {Array<Object>} reports - Snapshot-derived report objects.
  */
-export function renderReportList(mountEl, reports) {
+function renderList(mountEl, reports) {
   // Clear previous content
   mountEl.innerHTML = '';
 
   if (reports.length === 0) {
-    // ── Empty state ─────────────────────────────────────────────────────────
+    //  Empty state 
     const emptyEl = document.createElement('div');
     emptyEl.className = 'empty-state';
     emptyEl.textContent = 'No reports yet. Submit your first report!';
@@ -171,7 +169,7 @@ export function renderReportList(mountEl, reports) {
     return;
   }
 
-  // ── Report list ───────────────────────────────────────────────────────────
+  //  Report list 
   const listEl = document.createElement('ul');
   listEl.className = 'report-list';
   listEl.setAttribute('role', 'list');
@@ -197,29 +195,29 @@ function buildReportCard(report) {
   li.setAttribute('tabindex', '0');
   li.setAttribute('aria-label', `View details for ${report.category ?? 'report'} report`);
 
-  // ── Meta row: category name (small) + date ───────────────────────────────
+  //  Meta row: category name (small) + date 
   const metaRow = document.createElement('div');
   metaRow.className = 'report-card__meta';
 
   const categoryEl = document.createElement('small');
   categoryEl.className = 'report-card__category';
-  categoryEl.textContent = report.category ?? '—';
+  categoryEl.textContent = report.category ?? '';
 
   const dateEl = document.createElement('span');
   dateEl.className = 'report-card__date';
-  dateEl.textContent = report.submittedAt ? formatDate(report.submittedAt) : '—';
+  dateEl.textContent = report.submittedAt ? formatDate(report.submittedAt) : '';
 
   metaRow.appendChild(categoryEl);
   metaRow.appendChild(dateEl);
 
-  // ── Description preview (first 100 chars) ────────────────────────────────
+  //  Description preview (first 100 chars) 
   const descEl = document.createElement('p');
   descEl.className = 'report-card__desc';
   const fullDesc = report.description ?? '';
   descEl.textContent =
-    fullDesc.length > 100 ? `${fullDesc.slice(0, 100)}…` : fullDesc;
+    fullDesc.length > 100 ? `${fullDesc.slice(0, 100)}` : fullDesc;
 
-  // ── Status badge ─────────────────────────────────────────────────────────
+  //  Status badge 
   const badgeWrapper = document.createElement('div');
   badgeWrapper.className = 'report-card__badge';
   badgeWrapper.appendChild(statusBadge(report.status));
@@ -228,7 +226,7 @@ function buildReportCard(report) {
   li.appendChild(descEl);
   li.appendChild(badgeWrapper);
 
-  // ── Click / keyboard handler to open detail modal ─────────────────────────
+  //  Click / keyboard handler to open detail modal 
   const openDetail = () => openDetailModal(report);
   li.addEventListener('click', openDetail);
   li.addEventListener('keydown', (e) => {
@@ -256,22 +254,22 @@ function openDetailModal(report) {
 
   if (!modal || !content) return;
 
-  // ── Build the detail content ──────────────────────────────────────────────
+  //  Build the detail content 
   content.innerHTML = '';
 
   const frag = document.createDocumentFragment();
 
   // Category
-  frag.appendChild(createDetailRow('Category', report.category ?? '—'));
+  frag.appendChild(createDetailRow('Category', report.category ?? ''));
 
   // Full description
-  frag.appendChild(createDetailRow('Description', report.description ?? '—'));
+  frag.appendChild(createDetailRow('Description', report.description ?? ''));
 
   // Date submitted
   frag.appendChild(
     createDetailRow(
       'Date Submitted',
-      report.submittedAt ? formatDate(report.submittedAt) : '—'
+      report.submittedAt ? formatDate(report.submittedAt) : ''
     )
   );
 
@@ -324,7 +322,7 @@ function openDetailModal(report) {
 
   content.appendChild(frag);
 
-  // ── Show the modal ────────────────────────────────────────────────────────
+  //  Show the modal 
   modal.removeAttribute('hidden');
 
   // Move focus to the close button for accessibility

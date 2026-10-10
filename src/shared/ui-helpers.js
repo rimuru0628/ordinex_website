@@ -1,7 +1,7 @@
 /**
- * Shared UI helper utilities for BEE-Alerta.
+ * Shared UI helper utilities for BEE-Alert.
  *
- * These are pure DOM/utility functions with no Firebase or framework dependencies.
+ * Pure DOM/utility functions with no Firebase or framework dependencies.
  * Import individual helpers wherever they are needed across the app.
  */
 
@@ -12,17 +12,12 @@
 /**
  * Creates a <span> badge element styled according to the report status.
  *
- * @param {'Pending'|'Ongoing'|'Completed'} status - The report status value.
- * @returns {HTMLSpanElement} A span element with class `badge badge--<status>`
- *   and inner text equal to the status value.
- *
- * Example:
- *   const el = statusBadge('Pending');
- *   // <span class="badge badge--pending">Pending</span>
+ * @param {'Pending'|'Ongoing'|'Completed'} status
+ * @returns {HTMLSpanElement}
  */
 export function statusBadge(status) {
   const span = document.createElement('span');
-  const modifier = typeof status === 'string' ? status.toLowerCase() : '';
+  const modifier = typeof status === 'string' ? status.toLowerCase().replace(/\s+/g, '-') : '';
   span.className = `badge badge--${modifier}`;
   span.textContent = status;
   return span;
@@ -35,15 +30,10 @@ export function statusBadge(status) {
 /**
  * Formats a Firestore Timestamp or a plain JS Date into a human-readable string.
  *
- * Accepts:
- *   - Firestore Timestamp objects (have a `.toDate()` method)
- *   - Plain JS `Date` instances
- *
  * @param {import('firebase/firestore').Timestamp | Date} timestamp
  * @returns {string} Date formatted as "Mon DD, YYYY" (e.g. "Jan 15, 2025").
  */
 export function formatDate(timestamp) {
-  // Convert Firestore Timestamp → Date if needed
   const date =
     timestamp && typeof timestamp.toDate === 'function'
       ? timestamp.toDate()
@@ -62,16 +52,14 @@ export function formatDate(timestamp) {
 // Toast notifications
 // ---------------------------------------------------------------------------
 
-// Auto-dismiss delay in milliseconds
 const TOAST_AUTO_DISMISS_MS = 4000;
 
 /**
  * Appends a dismissible toast notification to `#toast-container`.
- * The toast auto-dismisses after 4 seconds. If the container element does
- * not exist in the current document, this function is a no-op.
+ * Auto-dismisses after 4 seconds.
  *
- * @param {string} message - The text to display in the toast.
- * @param {'success'|'error'|'info'|'warning'} [type='success'] - Visual style variant.
+ * @param {string} message
+ * @param {'success'|'error'|'info'|'warning'} [type='success']
  */
 export function showToast(message, type = 'success') {
   const container = document.getElementById('toast-container');
@@ -89,11 +77,10 @@ export function showToast(message, type = 'success') {
   const closeBtn = document.createElement('button');
   closeBtn.className = 'toast__close';
   closeBtn.setAttribute('aria-label', 'Dismiss notification');
-  closeBtn.textContent = '×';
+  closeBtn.textContent = '\u00D7'; // × — FIX: was empty string in Downloads version
 
   const dismiss = () => {
     toast.classList.add('toast--dismissing');
-    // Remove from DOM after CSS transition completes (300 ms)
     setTimeout(() => toast.remove(), 300);
   };
 
@@ -103,10 +90,7 @@ export function showToast(message, type = 'success') {
   toast.appendChild(closeBtn);
   container.appendChild(toast);
 
-  // Auto-dismiss
   const autoTimer = setTimeout(dismiss, TOAST_AUTO_DISMISS_MS);
-
-  // Cancel the auto-timer if the user manually dismisses first
   closeBtn.addEventListener('click', () => clearTimeout(autoTimer), { once: true });
 }
 
@@ -117,9 +101,7 @@ export function showToast(message, type = 'success') {
 const OVERLAY_ID = 'loading-overlay';
 
 /**
- * Shows a CSS spinner overlay on the currently active `<section>` element
- * (the one with the `active` class). Falls back to `<main>` if no active
- * section is found. Creates the overlay element if it does not yet exist.
+ * Shows a CSS spinner overlay on the currently active section.
  */
 export function showLoadingOverlay() {
   let overlay = document.getElementById(OVERLAY_ID);
@@ -141,7 +123,6 @@ export function showLoadingOverlay() {
     document.querySelector('main') ||
     document.body;
 
-  // Avoid appending multiple times
   if (!activeSection.contains(overlay)) {
     activeSection.appendChild(overlay);
   }
@@ -151,12 +132,11 @@ export function showLoadingOverlay() {
 }
 
 /**
- * Hides the loading spinner overlay if it is currently visible.
+ * Hides the loading spinner overlay.
  */
 export function hideLoadingOverlay() {
   const overlay = document.getElementById(OVERLAY_ID);
   if (!overlay) return;
-
   overlay.hidden = true;
   overlay.classList.add('loading-overlay--hidden');
 }

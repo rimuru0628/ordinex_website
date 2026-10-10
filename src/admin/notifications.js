@@ -1,14 +1,14 @@
-/**
- * Admin Notifications — real-time feed of system events.
+﻿/**
+ * Admin Notifications  real-time feed of system events.
  *
  * Firestore collection: `admin_notifications`
  * Document fields:
- *   type        — 'new_signup' | 'new_report'
- *   title       — Short heading
- *   body        — Detail text
- *   read        — boolean (default false)
- *   createdAt   — serverTimestamp
- *   meta        — { userId?, reportId?, reportRef?, residentName? }
+ *   type         'new_signup' | 'new_report'
+ *   title        Short heading
+ *   body         Detail text
+ *   read         boolean (default false)
+ *   createdAt    serverTimestamp
+ *   meta         { userId?, reportId?, reportRef?, residentName? }
  */
 
 import { db } from '../shared/firebase.js';
@@ -20,16 +20,17 @@ import {
   updateDoc,
   doc,
   writeBatch,
+  where,
 } from 'firebase/firestore';
 import { formatDate, showToast } from '../shared/ui-helpers.js';
 
-// ── Module state ─────────────────────────────────────────────────────────────
+//  Module state 
 
 let unsubscribe    = null;
 let allNotifs      = [];
 let currentFilter  = 'all'; // 'all' | 'unread' | 'new_signup' | 'new_report'
 
-// ── HTML template ─────────────────────────────────────────────────────────────
+//  HTML template 
 
 const SECTION_HTML = /* html */ `
 <div class="notif-section">
@@ -49,7 +50,7 @@ const SECTION_HTML = /* html */ `
 
   <div id="notif-list" class="notif-list"></div>
   <div id="notif-empty" class="notif-empty" hidden>
-    <span aria-hidden="true">🔔</span>
+    <span aria-hidden="true"></span>
     <p>No notifications yet.</p>
   </div>
   <div id="notif-skeleton" class="notif-skeleton" aria-hidden="true">
@@ -58,10 +59,10 @@ const SECTION_HTML = /* html */ `
 </div>
 `;
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+//  Helpers 
 
 function iconFor(type) {
-  return type === 'new_signup' ? '👤' : '📋';
+  return type === 'new_signup' ? '' : '';
 }
 
 function applyFilter(notifs) {
@@ -71,7 +72,7 @@ function applyFilter(notifs) {
   return notifs;
 }
 
-// ── Render ────────────────────────────────────────────────────────────────────
+//  Render 
 
 function render() {
   const list    = document.getElementById('notif-list');
@@ -100,7 +101,7 @@ function render() {
     item.dataset.id = n.id;
 
     const ts = n.createdAt;
-    const dateStr = ts ? formatDate(ts) : '—';
+    const dateStr = ts ? formatDate(ts) : '';
 
     item.innerHTML = `
       <div class="notif-item__icon" aria-hidden="true">${iconFor(n.type)}</div>
@@ -168,9 +169,9 @@ function escHtml(str) {
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// ── Public init ───────────────────────────────────────────────────────────────
+//  Public init 
 
-export function init(container, uid) {
+export function init(container, uid, barangay) {
   allNotifs     = [];
   currentFilter = 'all';
   if (unsubscribe) { unsubscribe(); unsubscribe = null; }
@@ -196,11 +197,11 @@ export function init(container, uid) {
   // Mark all read
   document.getElementById('notif-mark-all')?.addEventListener('click', markAllRead);
 
-  // Firestore real-time listener
-  const q = query(
-    collection(db, 'admin_notifications'),
-    orderBy('createdAt', 'desc')
-  );
+  // Firestore real-time listener (filter by barangay for officials)
+  const q = barangay
+    ? query(collection(db, 'admin_notifications'), where('meta.barangay', '==', barangay), orderBy('createdAt', 'desc'))
+    : query(collection(db, 'admin_notifications'), orderBy('createdAt', 'desc'));
+
 
   unsubscribe = onSnapshot(q, (snap) => {
     allNotifs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -212,7 +213,7 @@ export function init(container, uid) {
   });
 }
 
-// ── Exported helper (used by other admin modules) ─────────────────────────────
+//  Exported helper (used by other admin modules) 
 
 export async function writeAdminNotif(type, title, body, meta = {}) {
   try {

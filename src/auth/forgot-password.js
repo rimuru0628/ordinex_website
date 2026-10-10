@@ -1,5 +1,5 @@
-/**
- * Forgot Password — Firebase sendPasswordResetEmail.
+﻿/**
+ * Forgot Password  Firebase sendPasswordResetEmail.
  * Firebase sends the reset link email automatically.
  */
 
@@ -33,7 +33,7 @@ function clearResetError()       { if (!resetError) return; resetError.textConte
 
 function setLoading(btn, loading, label) {
   btn.disabled = loading;
-  btn.textContent = loading ? 'Sending…' : label;
+  btn.textContent = loading ? 'Sending' : label;
 }
 
 // ---------------------------------------------------------------------------

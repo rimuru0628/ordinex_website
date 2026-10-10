@@ -1,5 +1,5 @@
-/**
- * Admin Settings — lazy-loaded by admin/app.js.
+﻿/**
+ * Admin Settings  lazy-loaded by admin/app.js.
  * Handles general settings + municipal contacts editor.
  * Contacts are stored in Firestore at `settings/contacts` and read
  * by the mobile app to display live phone numbers to residents.
@@ -14,7 +14,7 @@ import {
 } from 'firebase/firestore';
 import { showToast } from '../shared/ui-helpers.js';
 
-// ── Default contacts ──────────────────────────────────────────────────────────
+//  Default contacts 
 
 const DEFAULT_CONTACTS = [
   { id: 'mayor',  name: "Municipal Mayor's Office", phone: '(072) 607-1234', email: 'mayor@bacnotan.gov.ph' },
@@ -22,7 +22,7 @@ const DEFAULT_CONTACTS = [
   { id: 'health', name: 'Rural Health Unit',        phone: '(072) 607-9012', email: 'health@bacnotan.gov.ph' },
 ];
 
-// ── HTML template ─────────────────────────────────────────────────────────────
+//  HTML template 
 
 const SETTINGS_HTML = /* html */ `
 <div class="settings-section">
@@ -55,7 +55,7 @@ const SETTINGS_HTML = /* html */ `
       <button class="btn btn--primary"   id="save-contacts-btn">Save Contacts</button>
     </div>
     <p class="settings-save-hint" id="contacts-save-hint" hidden>
-      Unsaved changes — click "Save Contacts" to push to the mobile app.
+      Unsaved changes  click "Save Contacts" to push to the mobile app.
     </p>
   </div>
 
@@ -98,7 +98,7 @@ const SETTINGS_HTML = /* html */ `
 </div>
 `;
 
-// ── Exported pure helper ──────────────────────────────────────────────────────
+//  Exported pure helper 
 
 export async function saveSettings(uid, settings) {
   await setDoc(
@@ -108,7 +108,7 @@ export async function saveSettings(uid, settings) {
   );
 }
 
-// ── Contact row builder ───────────────────────────────────────────────────────
+//  Contact row builder 
 
 let contactIdCounter = 0;
 
@@ -122,17 +122,17 @@ function buildContactRow(contact, onDelete, onChanged) {
     <div class="contact-row__fields">
       <div class="contact-row__field">
         <label class="contact-row__label">Office / Name</label>
-        <input class="form-input contact-row__name" type="text"
+        <input class="contact-row__input contact-row__name" type="text"
                placeholder="e.g. Mayor's Office" value="${escHtml(contact.name ?? '')}" />
       </div>
       <div class="contact-row__field">
         <label class="contact-row__label">Phone Number</label>
-        <input class="form-input contact-row__phone" type="tel"
+        <input class="contact-row__input contact-row__phone" type="tel"
                placeholder="e.g. (072) 607-1234" value="${escHtml(contact.phone ?? '')}" />
       </div>
       <div class="contact-row__field">
         <label class="contact-row__label">Email (optional)</label>
-        <input class="form-input contact-row__email" type="email"
+        <input class="contact-row__input contact-row__email" type="email"
                placeholder="e.g. office@bacnotan.gov.ph" value="${escHtml(contact.email ?? '')}" />
       </div>
     </div>
@@ -166,12 +166,12 @@ function escHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
-// ── Module init ───────────────────────────────────────────────────────────────
+//  Module init 
 
-export async function init(container, uid) {
+export async function init(container, uid, barangay) {
   container.innerHTML = SETTINGS_HTML;
 
-  // ── DOM refs ──────────────────────────────────────────────────────────────
+  //  DOM refs 
   const displayNameInput   = container.querySelector('#display-name');
   const contactEmailInput  = container.querySelector('#contact-email');
   const saveGeneralBtn     = container.querySelector('#save-general-btn');
@@ -193,7 +193,7 @@ export async function init(container, uid) {
     contactsList.appendChild(row);
   }
 
-  // ── Load general settings ─────────────────────────────────────────────────
+  //  Load general settings 
   try {
     const snap = await getDoc(doc(db, 'settings', uid));
     if (snap.exists()) {
@@ -210,7 +210,7 @@ export async function init(container, uid) {
     showToast('Could not load settings. Please refresh.', 'error');
   }
 
-  // ── Load contacts ─────────────────────────────────────────────────────────
+  //  Load contacts 
   try {
     const contactsSnap = await getDoc(doc(db, 'settings', 'contacts'));
     const stored = contactsSnap.exists()
@@ -222,7 +222,7 @@ export async function init(container, uid) {
     DEFAULT_CONTACTS.forEach(c => addRow(c));
   }
 
-  // ── Add contact row ───────────────────────────────────────────────────────
+  //  Add contact row 
   addContactBtn.addEventListener('click', () => {
     addRow({ id: `new-${Date.now()}`, name: '', phone: '', email: '' });
     markDirty();
@@ -230,7 +230,7 @@ export async function init(container, uid) {
     contactsList.lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
 
-  // ── Save contacts ─────────────────────────────────────────────────────────
+  //  Save contacts 
   saveContactsBtn.addEventListener('click', async () => {
     const contacts = readContactsFromDOM(contactsList);
 
@@ -265,7 +265,7 @@ export async function init(container, uid) {
     }
   });
 
-  // ── Save general settings ─────────────────────────────────────────────────
+  //  Save general settings 
   saveGeneralBtn.addEventListener('click', async () => {
     const displayName  = displayNameInput.value.trim();
     const contactEmail = contactEmailInput.value.trim();
@@ -282,7 +282,7 @@ export async function init(container, uid) {
     }
   });
 
-  // ── Toggles ───────────────────────────────────────────────────────────────
+  //  Toggles 
   emailNotifToggle.addEventListener('change', async () => {
     try { await saveSettings(uid, { emailNotificationsEnabled: emailNotifToggle.checked }); }
     catch (err) { console.error('[settings] toggle error:', err); showToast('Could not save setting.', 'error'); }
@@ -293,13 +293,13 @@ export async function init(container, uid) {
     catch (err) { console.error('[settings] toggle error:', err); showToast('Could not save setting.', 'error'); }
   });
 
-  // ── Warn on unsaved changes ───────────────────────────────────────────────
+  //  Warn on unsaved changes 
   window.addEventListener('beforeunload', (e) => {
     if (contactsDirty) { e.preventDefault(); e.returnValue = ''; }
   }, { once: true });
 }
 
-// ── Private helpers ───────────────────────────────────────────────────────────
+//  Private helpers 
 
 function _appendRetryButton(referenceEl, onRetry) {
   const existing = referenceEl.parentElement?.querySelector('.btn--retry');

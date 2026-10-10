@@ -20,10 +20,14 @@ vi.mock('../../src/shared/firebase.js', () => ({
 }));
 vi.mock('firebase/auth', () => ({
   createUserWithEmailAndPassword: vi.fn(),
+  onAuthStateChanged: vi.fn(),
+  signOut: vi.fn(),
 }));
 vi.mock('firebase/firestore', () => ({
   doc: vi.fn(),
   setDoc: vi.fn(),
+  addDoc: vi.fn(),
+  collection: vi.fn(),
   serverTimestamp: vi.fn(),
 }));
 

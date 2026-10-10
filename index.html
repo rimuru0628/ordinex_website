@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bacnotan BEE-Alert – Admin Sign In</title>
+  <title>Bacnotan BEE-Alert &ndash; Sign In</title>
   <link rel="stylesheet" href="src/styles/main.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -16,112 +16,211 @@
   <main class="auth-main">
     <div class="auth-card">
 
-      <!-- Orange gradient header -->
+      <!-- Header -->
       <header class="auth-card__header">
-        <div class="auth-card__logo" aria-hidden="true"><img src="src/assets/logo.png" alt="BEE-Alert logo" width="56" height="56" style="border-radius:50%;object-fit:cover;background:#fff;padding:4px;" /></div>
+        <div class="auth-card__logo" aria-hidden="true">
+          <img src="src/assets/logo.png" alt="BEE-Alert logo" width="56" height="56"
+               style="border-radius:50%;object-fit:cover;background:#fff;padding:4px;" />
+        </div>
         <h1 class="auth-card__title">Bacnotan BEE-Alert</h1>
         <p class="auth-card__subtitle">Admin Portal</p>
       </header>
 
-      <!-- White card body -->
-      <div class="auth-card__body">
-        <h2 class="auth-card__welcome">Admin Sign In</h2>
-        <p class="auth-card__hint">Sign in with your admin email and password.</p>
-
-        <!-- Auth-level error banner -->
-        <div
-          id="auth-error"
-          class="form-error form-error--block"
-          role="alert"
-          aria-live="polite"
-          hidden
-        ></div>
-
-        <form id="login-form" novalidate>
-
-          <!-- Email -->
-          <div class="form-group">
-            <label class="form-label" for="email-input">Email Address</label>
-            <div class="input-wrapper">
-              <span class="input-icon" aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2"
-                     stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="2" y="4" width="20" height="16" rx="2"/>
-                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
-                </svg>
-              </span>
-              <input
-                class="form-input"
-                type="email"
-                id="email-input"
-                name="email"
-                autocomplete="email"
-                placeholder="admin@example.com"
-                aria-describedby="email-error"
-                aria-required="true"
-              />
-            </div>
-            <span class="form-error" id="email-error" role="alert" aria-live="polite" hidden></span>
-          </div>
-
-          <!-- Password -->
-          <div class="form-group">
-            <label class="form-label" for="password-input">Password</label>
-            <div class="input-wrapper">
-              <span class="input-icon" aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2"
-                     stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                </svg>
-              </span>
-              <input
-                class="form-input form-input--has-end-icon"
-                type="password"
-                id="password-input"
-                name="password"
-                autocomplete="current-password"
-                placeholder="Enter your password"
-                aria-describedby="password-error"
-                aria-required="true"
-              />
-              <button type="button" class="input-end-btn" id="toggle-password" aria-label="Show password">
-                <!-- Eye open -->
-                <svg id="eye-show" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2"
-                     stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-                <!-- Eye closed (shown when password is visible) -->
-                <svg id="eye-hide" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2"
-                     stroke-linecap="round" stroke-linejoin="round"
-                     style="display:none">
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8
-                           a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4
-                           c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19
-                           m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                  <line x1="1" y1="1" x2="23" y2="23"/>
-                </svg>
-              </button>
-            </div>
-            <span class="form-error" id="password-error" role="alert" aria-live="polite" hidden></span>
-          </div>
-
-          <button class="btn btn--primary btn--full" type="submit" id="login-btn">
-            Sign In
-          </button>
-        </form>
-
+      <!-- Login role tabs -->
+      <div class="login-tabs" role="tablist" aria-label="Select login type">
+        <button
+          class="login-tab is-active"
+          id="tab-admin"
+          role="tab"
+          aria-selected="true"
+          aria-controls="panel-admin"
+          data-role="admin"
+        >
+          <!-- shield icon -->
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          Admin
+        </button>
+        <button
+          class="login-tab"
+          id="tab-official"
+          role="tab"
+          aria-selected="false"
+          aria-controls="panel-official"
+          data-role="official"
+        >
+          <!-- users icon -->
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          B. Official
+        </button>
       </div>
-    </div>
+
+      <!-- Card body -->
+      <div class="auth-card__body">
+
+        <!-- Shared auth error banner -->
+        <div id="auth-error" class="form-error form-error--block"
+             role="alert" aria-live="polite" hidden></div>
+
+        <!-- Admin panel -->
+        <div id="panel-admin" role="tabpanel" aria-labelledby="tab-admin">
+          <h2 class="auth-card__welcome">Admin Sign In</h2>
+          <p class="auth-card__hint">Sign in with your super-admin credentials.</p>
+
+          <form id="login-form-admin" novalidate>
+            <!-- Email -->
+            <div class="form-group">
+              <label class="form-label" for="email-admin">Email Address</label>
+              <div class="input-wrapper">
+                <span class="input-icon" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="4" width="20" height="16" rx="2"/>
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                  </svg>
+                </span>
+                <input class="form-input" type="email" id="email-admin" name="email"
+                       autocomplete="email" placeholder="admin@example.com"
+                       aria-describedby="email-admin-error" aria-required="true" />
+              </div>
+              <span class="form-error" id="email-admin-error" role="alert" aria-live="polite" hidden></span>
+            </div>
+
+            <!-- Password -->
+            <div class="form-group">
+              <label class="form-label" for="password-admin">Password</label>
+              <div class="input-wrapper">
+                <span class="input-icon" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                </span>
+                <input class="form-input form-input--has-end-icon" type="password"
+                       id="password-admin" name="password"
+                       autocomplete="current-password" placeholder="Enter your password"
+                       aria-describedby="password-admin-error" aria-required="true" />
+                <button type="button" class="input-end-btn" id="toggle-password-admin"
+                        aria-label="Show password">
+                  <svg id="eye-show-admin" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <svg id="eye-hide-admin" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round" style="display:none">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8
+                             a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4
+                             c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19
+                             m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                </button>
+              </div>
+              <span class="form-error" id="password-admin-error" role="alert" aria-live="polite" hidden></span>
+            </div>
+
+            <button class="btn btn--primary btn--full" type="submit" id="login-btn-admin">
+              Sign In as Admin
+            </button>
+          </form>
+        </div>
+
+        <!-- B. Official panel -->
+        <div id="panel-official" role="tabpanel" aria-labelledby="tab-official" hidden>
+          <h2 class="auth-card__welcome">B. Official Sign In</h2>
+          <p class="auth-card__hint">Sign in with your barangay official credentials.</p>
+
+          <form id="login-form-official" novalidate>
+            <!-- Email -->
+            <div class="form-group">
+              <label class="form-label" for="email-official">Email Address</label>
+              <div class="input-wrapper">
+                <span class="input-icon" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="4" width="20" height="16" rx="2"/>
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                  </svg>
+                </span>
+                <input class="form-input" type="email" id="email-official" name="email"
+                       autocomplete="email" placeholder="official@example.com"
+                       aria-describedby="email-official-error" aria-required="true" />
+              </div>
+              <span class="form-error" id="email-official-error" role="alert" aria-live="polite" hidden></span>
+            </div>
+
+            <!-- Password -->
+            <div class="form-group">
+              <label class="form-label" for="password-official">Password</label>
+              <div class="input-wrapper">
+                <span class="input-icon" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                </span>
+                <input class="form-input form-input--has-end-icon" type="password"
+                       id="password-official" name="password"
+                       autocomplete="current-password" placeholder="Enter your password"
+                       aria-describedby="password-official-error" aria-required="true" />
+                <button type="button" class="input-end-btn" id="toggle-password-official"
+                        aria-label="Show password">
+                  <svg id="eye-show-official" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <svg id="eye-hide-official" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round" style="display:none">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8
+                             a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4
+                             c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19
+                             m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                </button>
+              </div>
+              <span class="form-error" id="password-official-error" role="alert" aria-live="polite" hidden></span>
+            </div>
+
+            <button class="btn btn--primary btn--full" type="submit" id="login-btn-official">
+              Sign In as B. Official
+            </button>
+          </form>
+
+          <p class="auth-card__footer-link">
+            Don't have an account?
+            <a href="/register.html" class="auth-link">Create Account</a>
+          </p>
+        </div>
+
+      </div><!-- /.auth-card__body -->
+    </div><!-- /.auth-card -->
   </main>
 
   <div id="loading-overlay" class="loading-overlay" hidden aria-hidden="true">
-    <div class="spinner" role="status"><span class="sr-only">Loading…</span></div>
+    <div class="spinner" role="status"><span class="sr-only">Loading&hellip;</span></div>
   </div>
 
   <script type="module" src="src/auth/login.js"></script>

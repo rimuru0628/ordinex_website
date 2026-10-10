@@ -1,12 +1,12 @@
-/**
- * Resident SPA entry point — `src/resident/app.js`
+﻿/**
+ * Resident SPA entry point  `src/resident/app.js`
  *
  * Responsibilities:
- *  1. Auth guard — redirect unauthenticated or wrong-role users immediately.
- *  2. Header hydration — populate resident name and barangay from Firestore.
- *  3. Tab switching — show the active panel, hide others; lazy-load tab modules
+ *  1. Auth guard  redirect unauthenticated or wrong-role users immediately.
+ *  2. Header hydration  populate resident name and barangay from Firestore.
+ *  3. Tab switching  show the active panel, hide others; lazy-load tab modules
  *     on first activation.
- *  4. Sign Out — call Firebase signOut then redirect to /index.html regardless
+ *  4. Sign Out  call Firebase signOut then redirect to /index.html regardless
  *     of whether the call succeeds or fails.
  *
  * Requirements: 3.2, 3.3, 3.4
@@ -18,7 +18,7 @@ import { auth, db } from '../shared/firebase.js';
 import { authGuard } from '../shared/auth-guard.js';
 
 // ---------------------------------------------------------------------------
-// Tab → module mapping for lazy loading
+// Tab  module mapping for lazy loading
 // ---------------------------------------------------------------------------
 
 /**
@@ -41,7 +41,7 @@ const initialisedTabs = new Set();
 // ---------------------------------------------------------------------------
 
 async function init() {
-  // 1. Auth guard — resolves with Firebase User or redirects away.
+  // 1. Auth guard  resolves with Firebase User or redirects away.
   let user;
   try {
     user = await authGuard('resident');
@@ -133,14 +133,14 @@ function setupTabs(user) {
 async function activateTab(activeBtn, allBtns, user) {
   const tabName = resolveTabName(activeBtn);
 
-  // ── Update button aria states & roving tabindex ───────────────────────────
+  //  Update button aria states & roving tabindex 
   allBtns.forEach((btn) => {
     const isActive = btn === activeBtn;
     btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
     btn.setAttribute('tabindex', isActive ? '0' : '-1');
   });
 
-  // ── Show / hide panels ────────────────────────────────────────────────────
+  //  Show / hide panels 
   const allPanels = /** @type {NodeListOf<HTMLElement>} */ (
     document.querySelectorAll('.tab-panel')
   );
@@ -154,7 +154,7 @@ async function activateTab(activeBtn, allBtns, user) {
     }
   });
 
-  // ── Lazy-load and initialise the tab module on first activation ───────────
+  //  Lazy-load and initialise the tab module on first activation 
   if (tabName && !initialisedTabs.has(tabName)) {
     const moduleLoader = TAB_MODULES[tabName];
 
@@ -197,7 +197,7 @@ function setupSignOut() {
   btn.addEventListener('click', () => {
     signOut(auth)
       .catch(() => {
-        // Silently ignore — redirect is unconditional via .finally()
+        // Silently ignore  redirect is unconditional via .finally()
       })
       .finally(() => {
         window.location.href = '/index.html';
